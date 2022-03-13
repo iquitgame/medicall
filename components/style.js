@@ -15,6 +15,7 @@ export default StyleSheet.create({
         borderWidth: 20,
     },
     greeting: {
+        color: 'black',
         marginTop: 40,
         textAlign: 'center',
         fontWeight: 'bold',
@@ -25,16 +26,21 @@ export default StyleSheet.create({
     },
     buttonContainer: {
         height: 100,
-        alignItems: 'center',
         flex: 1,
         flexDirection: 'row',
         justifyContent: 'space-between',
+        // borderWidth: 1,
+    },
+    clickableText: {
+        backgroundColor: '#ffffff',
+
     },
     button: {
         paddingHorizontal: 10,
         paddingVertical: 10,
         backgroundColor: '#005bbb',
         borderRadius: 25,
+        alignSelf: 'flex-end',
     },
     buttonText: {
         color: '#fff',
@@ -65,4 +71,12 @@ export default StyleSheet.create({
         paddingVertical: 5,
         color: '#0093E9',
     },
+    dataContainer: {
+        flex:1,
+        textAlign: 'center',
+        alignItems: 'center',
+        justifyContent: 'center',
+        alignSelf: 'stretch',
+        // borderWidth: 1,
+    }
 });
