@@ -9,8 +9,6 @@
     "eject": "expo eject"
   },
   "dependencies": {
-    "@react-native-firebase/app": "^14.5.1",
-    "@react-native-firebase/database": "^14.5.1",
     "agora-rn-uikit": "^3.3.0",
     "axios": "^0.26.0",
     "expo": "~44.0.0",
