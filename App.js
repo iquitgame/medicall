@@ -2,6 +2,7 @@ import React, {useState} from 'react';
 //There's a weird bug that AgoraUIKit doesn't load properly. Looking into this
 //Follow these instructions:
 //https://www.agora.io/en/blog/building-a-video-calling-app-using-the-agora-sdk-on-expo-react-native/
+//expo run:android
 import AgoraUIKit from 'agora-rn-uikit';
 import {
     Dimensions, 
