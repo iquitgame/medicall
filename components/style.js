@@ -25,11 +25,8 @@ export default StyleSheet.create({
         flex: 1,
     },
     buttonContainer: {
-        height: 100,
-        flex: 1,
+        paddingVertical: 20,
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        // borderWidth: 1,
     },
     clickableText: {
         backgroundColor: '#ffffff',

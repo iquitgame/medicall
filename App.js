@@ -14,6 +14,7 @@ import axios from 'axios';
 //if error is thrown on firebase/app line, it's cuz google broke a thing. Need to downgrade firebase version to 9.6.7
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, set, child, get } from 'firebase/database';
+import { LineChart } from "react-native-chart-kit";
 
 import styles from './components/style';
 
@@ -46,15 +47,65 @@ const App = () => {
   const [videoCall, setVideoCall] = useState(false);
   const [isHost, setIsHost] = useState(false);
   const [recording, setRecording] = useState(false);
-  const [state, setState] = useState({'Data':'Empty'})
+  const [state, setState] = useState({'data':''})
+
+  const blankData = {
+    labels: ["00:00:00", "00:00:30", "00:01:00", "00:01:30", "00:02:00", "00:02:30"],
+    datasets: [
+      {
+        data: [
+          Math.random() * 100.0,
+          Math.random() * 100.0,
+          Math.random() * 100.0,
+          Math.random() * 100.0,
+          Math.random() * 100.0,
+          Math.random() * 100.0
+        ]
+      },
+      {
+        data: [0,0,0,0,0,0],
+        color: ()=> 'transparent', 
+        strokeWidth: 0, 
+        withDots: false, 
+      },
+      {
+        data: [100,100,100,100,100,100],
+        color: ()=> 'transparent', 
+        strokeWidth: 0, 
+        withDots: false, 
+      }
+    ]
+  }
 
   function recordData() {
     setRecording(!recording);
     const data = {
-      'spo2': 1234,
+      'data': 'filled',
+      'spo2': 
+      {
+        labels: ["00:00:00", "", "", "", "", "00:02:30"],
+        datasets: 
+        [
+          {
+            data: [99.5, 95.0, 96.0, 98.0, 99.5, 98.0]
+          },
+          {
+            data: [0,0,0,0,0,0],
+            color: ()=> 'transparent', 
+            strokeWidth: 0, 
+            withDots: false, 
+          },
+          {
+            data: [100,100,100,100,100,100],
+            color: ()=> 'transparent', 
+            strokeWidth: 0, 
+            withDots: false, 
+          }
+        ]
+      },
       'hr': 70,
       'bp_s': 120,
-      'bp_d': 120,
+      'bp_d': 80,
       'temp': 98.6,
     };
     setState(data);
@@ -120,9 +171,37 @@ const App = () => {
     <AgoraUIKit rtcProps={rtcProps} callbacks={callbacks} />
     ) : (
       <View style={styles.container}>
+
         <TouchableOpacity onPress={() => setIsHost(!isHost)} style={styles.clickableText}>
             <Text style={styles.greeting}> Welcome to Medicall, {isHost ? 'Doctor' : 'user'}.</Text>
         </TouchableOpacity>
+
+        <View style={styles.dataContainer}>
+          <Text>Blood Oxygen Levels (%)</Text>
+          <LineChart
+            data={state.data === '' ? blankData : state.spo2}
+            width={Dimensions.get("window").width-40} //40 is from border
+        
+            height={200}
+            chartConfig={
+              {
+                backgroundColor: "#ffffff",
+                backgroundGradientFrom: "#ffffff",
+                backgroundGradientTo: "#ffffff",
+                backgroundGradientFromOpacity: 0,
+                decimalPlaces: 1,
+                color: (opacity = 1) => `rgba(0,0,0,${opacity})`,
+                labelColor: (opacity = 1) => `rgba(0,0,0,${opacity})`,
+                style: {borderRadius: 16}
+              }
+            }
+          />
+          <Text>Heart rate: {state.data === '' ? '00' : state.hr} bpm</Text>
+          <Text>Blood pressure: {state.data === '' ? '000' : state.bp_s} / {state.data === '' ? '000' : state.bp_d}</Text>
+          <Text>Body Temperature: {state.data === '' ? '00.0' : state.temp}{'\u00b0'}</Text>
+          {/* <Text>{JSON.stringify(state)}</Text> */}
+        </View>
+
         <View style={styles.buttonContainer}>
           {!isHost ? <TouchableOpacity onPress={() => recordData()} style={styles.button}>
             <Text style={styles.buttonText}> {recording ? 'Stop' : 'Record'} </Text>
@@ -132,13 +211,17 @@ const App = () => {
               <Text style={styles.buttonText}> {isHost ? 'Receive' : 'Transmit'} </Text>
           </TouchableOpacity>
           <View style={styles.spacer}></View>
-          <TouchableOpacity onPress={ () => {setVideoCall(true); console.log(rtcProps)}} style={styles.button}>
+          <TouchableOpacity onPress={ () => {
+              setVideoCall(true);
+              console.log(rtcProps);
+              const d = new Date();
+              const time = "ms: " + d.getMinutes() + ":" + d.getSeconds() + "." + d.getMilliseconds();
+              console.log(time);
+            }} style={styles.button}>
             <Text style={styles.buttonText}> Start Call </Text>
           </TouchableOpacity>
         </View>
-        <View style={styles.dataContainer}>
-          <Text>{JSON.stringify(state)}</Text>
-        </View>
+
       </View>
     )
 };
