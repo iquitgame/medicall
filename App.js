@@ -15,6 +15,10 @@ import axios from 'axios';
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, set, child, get } from 'firebase/database';
 import { LineChart } from "react-native-chart-kit";
+//was originally doing this with import, but had to revert to old version
+//new version uses crypto module to get crypto-secure random numbers
+var AES = require("crypto-js/aes");
+var CryptoJS = require("crypto-js");
 
 import styles from './components/style';
 
@@ -137,7 +141,9 @@ const App = () => {
     try {
       const db = getDatabase();
       const reference = ref(db, 'channel/' + rtcProps.channel);
-      set(reference, state);
+      console.log('transmitted: ', state);
+      const encrypted = AES.encrypt(JSON.stringify(state), 'secret key 123').toString();
+      set(reference, encrypted);
     } catch (e) {
       console.error("Error adding document: ", e);
     }
@@ -150,8 +156,11 @@ const App = () => {
 
     get(child(reference, 'channel/' + rtcProps.channel)).then((snapshot) => {
       if (snapshot.exists()) {
-        setState(snapshot.val());
-        console.log(snapshot.val());
+        console.log(snapshot.val())
+        const bytes = AES.decrypt(snapshot.val(), 'secret key 123');
+        const plaintext = bytes.toString(CryptoJS.enc.Utf8);
+        console.log('decoded: ',plaintext);
+        setState(JSON.parse(plaintext));
       } else {
         console.log("No data available");
       }
