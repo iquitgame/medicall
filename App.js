@@ -1,7 +1,8 @@
-import React, {useState} from 'react';
+import React, {useState, useCallback, useEffect} from 'react';
 //There's a weird bug that AgoraUIKit doesn't load properly. Looking into this
 //Follow these instructions:
 //https://www.agora.io/en/blog/building-a-video-calling-app-using-the-agora-sdk-on-expo-react-native/
+//expo prebuild for the android/ios files
 //expo run:android
 import AgoraUIKit from 'agora-rn-uikit';
 import {
@@ -19,10 +20,20 @@ import { LineChart } from "react-native-chart-kit";
 //new version uses crypto module to get crypto-secure random numbers
 var AES = require("crypto-js/aes");
 var CryptoJS = require("crypto-js");
+import { BleManager, Device, Service, Characteristic } from 'react-native-ble-plx';
+import { Buffer } from 'buffer';
 
 import styles from './components/style';
+import { Base64 } from './base64';
 
+const bleManager = new BleManager();
 
+const decodeBleString = (value) => {
+  if (!value) {
+    return '';
+  }
+  return Base64.decode(value).charCodeAt(0);
+}
 
 const rtcProps = {
     appId: '08abc2d5356748b4841342daedf162e0',
@@ -47,11 +58,58 @@ const rtcProps = {
 
 const App = () => {
 
-  console.log(rtcProps.uid)
+  // console.log(rtcProps.uid)
   const [videoCall, setVideoCall] = useState(false);
   const [isHost, setIsHost] = useState(false);
   const [recording, setRecording] = useState(false);
-  const [state, setState] = useState({'data':''})
+  const [state, setState] = useState({'data':''});
+  const [devices, setDevices] = useState([]);
+  const [device, setDevice] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [services, setServices] = useState([]);
+  const [service, setService] = useState(null);
+  const [characteristics, setCharacteristics] = useState([]);
+
+  const disconnectDevice = useCallback(async () => {
+    const isDeviceConnected = await devices.isConnected();
+    if (isDeviceConnected) {
+      await device?.cancelConnection();
+    }
+  }, [device])
+
+  useEffect(() => {
+    if(device === null){
+      return;
+    }
+
+    const getDeviceInformations = async () => {
+      const connectedDevice = await device.connect();
+      setIsConnected(true);
+      const allServicesAndCharacteristics = await connectedDevice.discoverAllServicesAndCharacteristics();
+      const discoveredServices = await allServicesAndCharacteristics.services();
+      setServices(discoveredServices);
+      //TODO: figure out service we want and setService, which will trigger getCharacteristic
+    };
+
+    getDeviceInformations();
+
+    device.onDisconnected(() => {
+      console.log("device disconnected");
+    });
+
+    return () => {
+      disconnectDevice();
+    };
+  }, [device, disconnectDevice])
+
+  useEffect(() => {
+    const getCharacteristics = async() => {
+      const newCharacteristics = await service.characteristics()
+      setCharacteristics(newCharacteristics);
+      //TODO: figure out characteristic we want and setCharacteristic, which we can monitor and get value
+    }
+    getCharacteristics();
+  }, [service]);
 
   const blankData = {
     labels: ["00:00:00", "00:00:30", "00:01:00", "00:01:30", "00:02:00", "00:02:30"],
@@ -82,6 +140,49 @@ const App = () => {
   }
 
   function recordData() {
+    console.log("recordData()");
+
+    //If recording, stop and return.
+    if(recording === true){
+      setRecording(false);
+      bleManager.stopDeviceScan();
+      console.log("stop scanning");
+      return;
+    }
+
+    //if not recording, start scanning.
+
+
+    bleManager.startDeviceScan(null, null, (error, scannedDevice) => {
+      if (error) {
+        console.warn(error);
+      }
+
+      // console.log(scannedDevice);
+      //Eventually I should just check for our bluetooth module and only accept that.
+      if(scannedDevice.name !== null){
+        setDevices([...devices,scannedDevice]);
+
+        console.log('id:',scannedDevice.id);
+        console.log('name',scannedDevice.name);
+        console.log('rssi',scannedDevice.rssi);
+        //no point, decoded is still a mess
+        // console.log('manufacturer:', Base64.decode(scannedDevice.manufacturerData?.replace(/[=]/g, ''),));
+        // console.log('serviceData:',scannedDevice.serviceData);
+        console.log('serviceData');
+        for(const key in scannedDevice.serviceData){
+          console.log(`${key}: ${Base64.decode(scannedDevice.serviceData[key],)}`);
+        }
+        console.log('UUIDS:',scannedDevice.UUIDs);
+        // bleManager.stopDeviceScan();
+      }
+    });
+
+    setTimeout(() => {
+      bleManager.stopDeviceScan();
+      console.log("stop scanning");
+    }, 5000);
+
     setRecording(!recording);
     const data = {
       'data': 'filled',
@@ -121,7 +222,7 @@ const App = () => {
     // let options = {
 
     // }
-    console.log(url)
+    // console.log(url)
     axios.get(url)
     .then(function (response) {
         let data = response['data']
